@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "scheme": "delightea",
+    "name": "delightea_pos",
+    "slug": "delightea_pos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.patrick019.delightea_pos"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b8bc5295-5ae2-4611-ae7c-13b3bfee8761"
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
