@@ -1,14 +1,19 @@
 import { View, Text } from 'react-native'
-import { Redirect } from 'expo-router';
-import React from 'react'
-import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react'
+import { Redirect, Stack } from 'expo-router'
+import '../global.css'
+import { StatusBar } from 'expo-status-bar'
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 const index = () => {
-
-  return  (
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+  }, []);
+  return (
     <View>
-      <StatusBar hidden  />
-      <Redirect href={"/(drawer)/home"} />
+      <Stack.Screen options={{ title: 'Home', headerShown: false }} />
+        <StatusBar hidden={true} />
+        <Redirect href="/(drawers)" />
     </View>
     
   )
