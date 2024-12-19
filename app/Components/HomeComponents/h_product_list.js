@@ -6,7 +6,7 @@ import Modal from "react-native-modal";
 import CartStore from '../../../store/CartStore';
 import http from '../../../http';
 
-const HomeProductList = () => {
+const HomeProductList = ({result}) => {
   const [elementWidth, setElementWidth] = useState(0);
   const {Products} = ProductStore()
   const {Cart, setCart} = CartStore()
@@ -41,9 +41,16 @@ const HomeProductList = () => {
     Products !== null && setProducts(Products)
   }, [Products]);
 
+  useEffect(() => {
+    if (result !== null) {
+      setProducts(result);
+      setSelectedCategory('674bec4b254613927136d279');
+  }
+  }, [result]);
+
   // Setting of products from selected category
   useEffect(() => {
-    selectedCategory !== null && Products !== null && setProducts(Products.filter((item) => item.category_id.category_name === selectedCategory));
+    selectedCategory !== null && Products !== null && setProducts(selectedCategory == '674bec4b254613927136d279' ? Products : Products.filter((item) => item.category_id._id === selectedCategory));
   }, [selectedCategory, Products]);
 
   const isSubmitDisabled = () => {
@@ -98,7 +105,7 @@ const HomeProductList = () => {
   }
 
   return (
-    <View className="w-[70%] flex flex-col bg-[#f9f9f9] h-full p-3  justify-start items-center">
+    <View className="flex-1 flex flex-col bg-[#f9f9f9] h-full p-3  justify-start items-center">
       <Modal onBackdropPress={()=>{handleCancel()}} isVisible={isModalOpen} backdropOpacity={0.5} animationIn={'slideInUp'} animationOut={'slideOutDown'}>
         <View className="flex-1 flex flex-col bg-white w-[60%] h-full mx-auto p-5">
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -189,13 +196,16 @@ const HomeProductList = () => {
       style={{ width: '100%'}}
       numColumns={5}
       data={products}
-      renderItem={({ item }) => <TouchableOpacity onPress={()=>{handleSelectItem(item);setIsModalOpen(true)}} style={{width: elementWidth/5}} className=" h-[200px] p-1 flex flex-col justify-center items-center">
-        <View className="flex-1 bg-white w-full h-full flex flex-col p-2">
+      renderItem={({ item }) => <TouchableOpacity onPress={()=>{handleSelectItem(item);setIsModalOpen(true)}} style={{width: elementWidth/5}} className=" h-fit p-1 flex flex-col justify-center items-center">
+        <View className="flex-1 bg-white rounded-md border border-gray-200 w-full h-fit flex flex-col p-2">
           {/* Image */}
-          <View className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow">
+          <View className="w-full relative aspect-square bg-red-100 rounded-lg overflow-hidden shadow">
             <Image source={{uri: item.image || 'https://placehold.co/400x400?text=No%20Image'}} className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
           </View>
-          <Text className="text-start mt-2 font-bold">{item.product_name}</Text>
+          <View className=" w-fit h-fit bg-white">
+              <Text style={{width : 'fit-content'}} className="text-center mt-1 ">({item.category_id.category_name})</Text>
+          </View>
+          <Text className="text-center mt-2 font-bold">{item.product_name}</Text>
         </View>
       </TouchableOpacity>}
       keyExtractor={(item, index) => index.toString()}

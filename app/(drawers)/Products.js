@@ -10,7 +10,7 @@ export default function Products() {
   const { height, width } = Dimensions.get('window');
 
   return (
-  <View className="flex-1 flex flex-row bg-[#f9f9f9]">
+  <View className="flex-1 flex flex-col bg-[#f9f9f9]">
   <Drawer.Screen
   options={{
       title: "Products",

@@ -113,7 +113,7 @@ const h_cart_products = () => {
     
 
   return (
-    <View className="w-[30%] h-full flex flex-col bg-white p-3  justify-start items-center">
+    <View className="w-[300px] h-full flex flex-col bg-white p-3  justify-start items-center">
       {/* Edit Item modal */}
       <Modal onBackdropPress={()=>{handleCancel()}} isVisible={isModalOpen} backdropOpacity={0.5} animationIn={'slideInUp'} animationOut={'slideOutDown'}>
         <View className="flex-1 flex flex-col bg-white w-[60%] h-full mx-auto p-5">

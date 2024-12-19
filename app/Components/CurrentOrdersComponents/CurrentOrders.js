@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Animated, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Animated, StyleSheet, ToastAndroid, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import PendingOrdersProvider from '../../../Hooks/PendingOrdersProvider'
@@ -10,20 +10,44 @@ import Reanimated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
+import http from '../../../http'
 
 const CurrentOrders = () => {
-    const {pendingOrders} = PendingOrdersProvider()
+    const {pendingOrders, getPendingOrders} = PendingOrdersProvider()
     const {CurrentOrders, setCurrentOrders} = CurrentOrdersStore()
     const [isSwiped, setIsSwiped] = useState(false);
     const [indexSwiped, setIndexSwiped] = useState([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
     let rightCount = 0
 
-    // useEffect(() => {
-    //     console.log(CurrentOrders)
-    // }, [CurrentOrders]);
+    const showToast = (message) => {
+        ToastAndroid.show(message, ToastAndroid.SHORT);
+    };
 
-    const RightAction = (prog, drag) => {
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            const response = await getPendingOrders();
+            setIsRefreshing(false);
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const handleUpdateOrder = async (_id, status) => {
+        try {
+            const response = await http.patch('updateOrderStatus', {order_id: _id, status: status});
+            if(response.status === 200) {
+                showToast('Order updated successfully')
+                getPendingOrders()
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const RightAction = ({ prog, drag, index, id }) => {
         const styleAnimation = useAnimatedStyle(() => {
       
           return {
@@ -33,14 +57,14 @@ const CurrentOrders = () => {
       
         return (
           <Reanimated.View style={styleAnimation}>
-            <View className="w-[70px] bg-green-500  h-[96%] mt-2 flex flex-row justify-center items-center">
+            <TouchableOpacity onPress={()=>handleUpdateOrder(id, 'Done')} className="w-[70px] bg-green-500  h-[96%] mt-2 flex flex-row justify-center items-center">
                 <Text className="text-white">Done</Text>
-            </View>
+            </TouchableOpacity>
           </Reanimated.View>
         );
     }
 
-    const LeftAction = ({ prog, drag, index }) => {
+    const LeftAction = ({ prog, drag, index, id }) => {
 
         const styleAnimation = useAnimatedStyle(() => {
           return {
@@ -50,9 +74,9 @@ const CurrentOrders = () => {
       
         return (
           <Reanimated.View style={styleAnimation}>
-            <View className={`w-[70px] bg-red-500 h-[96%] mt-2 flex flex-row justify-center items-center`}>
+            <TouchableOpacity onPress={()=>handleUpdateOrder(id, 'Cancelled')} className={`w-[70px] bg-red-500 h-[96%] mt-2 flex flex-row justify-center items-center`}>
                 <Text className="text-white">Delete</Text>
-            </View>
+            </TouchableOpacity>
           </Reanimated.View>
         );
     }
@@ -70,6 +94,8 @@ const CurrentOrders = () => {
             setIndexSwiped([...indexSwiped.filter((item) => item !== index)])
     }
 
+    console.log(isRefreshing)
+
   return (
 <GestureHandlerRootView>
     <View className="flex-1 flex flex-col bg-[#eeeeee]">
@@ -82,7 +108,7 @@ const CurrentOrders = () => {
             headerRight: () => <></>
         }}  
         />
-        <ScrollView>
+        <ScrollView refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
             {
                 CurrentOrders?.sort((a, b) => b.created_at - a.created_at).map((order, index)=>{
                     const date = new Date(order.created_at)
@@ -90,8 +116,9 @@ const CurrentOrders = () => {
                     const items = order.items
                     return (
                         <ReanimatedSwipeable leftThreshold={100} onSwipeableCloseStartDrag={()=>{handleCloseSwipe(index)}} onSwipeableOpenStartDrag={(dragX)=>{handleSwipe(dragX, index)}} renderLeftActions={(progress, dragX) => (
-                            <LeftAction index={index} prog={progress} drag={dragX} />  // Pass the index dynamically here
-                          )}  renderRightActions={RightAction} key={index}>
+                            <LeftAction index={index} id={order.order_id} prog={progress} drag={dragX} />  // Pass the index dynamically here
+                          )}  renderRightActions={(progress, dragX) => (
+                            <RightAction index={index} id={order.order_id} prog={progress} drag={dragX} />)} key={index}>
                             <View className={`flex-1 ${indexSwiped.includes(index) ? ' pl-[75px]' : 'pl-2'} transition ease-in-out duration-500 bg-white h-fit flex flex-col justify-start gap-2 p-2 mt-2`}> 
                             <View className="flex flex-row  justify-between">
                                 <View className="flex flex-row gap-3">

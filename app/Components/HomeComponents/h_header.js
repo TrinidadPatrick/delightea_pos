@@ -9,7 +9,7 @@ const HomeHeader = ({selectedCategory, setSelectedCategory}) => {
   const {Categories} = CategoryStore()
 
   useEffect(() => {
-    Categories !== null && setSelectedCategory(Categories[0]?.category_name);
+    Categories !== null && setSelectedCategory(Categories[0]?._id);
   }, [Categories]);
   
   return (
@@ -18,8 +18,8 @@ const HomeHeader = ({selectedCategory, setSelectedCategory}) => {
       {
         Categories?.map((category, index) => {
           return (
-            <TouchableOpacity onPress={()=>setSelectedCategory(category.category_name)} className={`w-[100px] h-[40px] ${selectedCategory == category.category_name ? ' bg-theme-medium text-white' : 'bg-white'} shadow rounded flex flex-row justify-center items-center`} key={index}>
-              <Text className={`text-center ${selectedCategory == category.category_name ? 'text-white' : 'text-black'}`}>{category.category_name}</Text>
+            <TouchableOpacity onPress={()=>setSelectedCategory(category._id)} className={`w-[100px] h-[40px] ${selectedCategory == category._id ? ' bg-theme-medium text-white' : 'bg-white'} shadow rounded flex flex-row justify-center items-center`} key={index}>
+              <Text className={`text-center ${selectedCategory == category._id ? 'text-white' : 'text-black'}`}>{category.category_name}</Text>
             </TouchableOpacity>
           )
         })

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native'
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image, ToastAndroid } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Stack, useRouter } from 'expo-router'
 import { Drawer } from 'expo-router/drawer'
@@ -11,11 +11,13 @@ import AddonStore from '../../../store/AddonStore'
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios'
 import ProductProvider from '../../../Hooks/ProductProvider'
+import ProductStore from '../../../store/ProductStore'
 
 
 const P_add_product = () => {
   const router = useRouter();
   const {getProducts} = ProductProvider()
+  const {setProducts} = ProductStore()
   const [uploadingImage, setUploadingImage] = useState(false)
   const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dno1ztttc/image/upload' 
   const uploadPreset = 'product_image'
@@ -31,6 +33,10 @@ const P_add_product = () => {
     addons: [],
     category_id: '',
   })
+
+  const showToast = (message) => {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+};
 
   const clearInputs = () => {
     setProductInfo({...productInfo, product_name: '', product_price: '', image: '', variants: [], addons: [], category_id: 1})
@@ -50,17 +56,18 @@ const P_add_product = () => {
 
   const handleSubmit = async ()=> {
     const data = {...productInfo, variants: variants, addons: selected}
-    clearInputs()
     try {
       const response = await http.post('addProduct', data);
-      getProducts()
-      router.push('/Components/ProductsComponents/p_product_list');
+      const productsData = await getProducts()
+      setProducts(productsData.products)
+      clearInputs()
+      showToast('Product added successfully')
     } catch (error) {
       console.log(error.response)
     }
   }
 
-  const pickProfile = async () => {
+  const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
     return;
@@ -97,7 +104,7 @@ const P_add_product = () => {
           'Content-Type': 'multipart/form-data',
         }
         });
-        setProductInfo({...productInfo, image: response.data.url})
+        setProductInfo({...productInfo, image: response.data.secure_url})
         setUploadingImage(false)
     } catch (error) {
       console.log(error)
@@ -126,7 +133,7 @@ const P_add_product = () => {
           <Image source={{uri: productInfo.image}} className="w-[100px] aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
         </View>
         }
-        <TouchableOpacity onPress={pickProfile} className="w-full h-[40px] bg-gray-200 text-white rounded flex flex-col items-center justify-center">
+        <TouchableOpacity onPress={pickImage} className="w-full h-[40px] bg-gray-200 text-white rounded flex flex-col items-center justify-center">
           <Text className="text-gray-800">{uploadingImage ? 'Uploading...' : 'Upload Image'}</Text>
         </TouchableOpacity>
       </View>
