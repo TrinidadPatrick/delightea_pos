@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios'
 import ProductProvider from '../../../Hooks/ProductProvider'
 import ProductStore from '../../../store/ProductStore'
+import { MultiSelect } from 'react-native-element-dropdown';
 
 
 const P_add_product = () => {
@@ -122,10 +123,10 @@ const P_add_product = () => {
     <View className="flex-1 flex flex-row bg-[#f9f9f9] justify-center">
         <Stack.Screen options={{ title: 'Add Product', headerShown: true }} />
     
-    <View className="w-[400px] h-[100%] bg-white rounded overflow-hidden shadow flex flex-col p-2 gap-3">
-      <ScrollView>
-
+    <View className="w-[450px] relative bg-white rounded overflow-hidden shadow flex flex-col p-2 gap-3">
+      <ScrollView contentContainerStyle={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
       {/* Product image */}
+      <View className="flex-1 h-full">
       <View className="flex-1 mt-0">
         {
           productInfo.image &&
@@ -139,13 +140,13 @@ const P_add_product = () => {
       </View>
 
       {/* Product name */}
-      <View>
+      <View className="h-[60px] flex flex-col">
         <Text className="text-sm text-gray-400">Product Name</Text>
-        <TextInput value={productInfo.product_name} className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setProductInfo({...productInfo, product_name: text})} />
+        <TextInput value={productInfo.product_name} className="w-[99%] flex-1 bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setProductInfo({...productInfo, product_name: text})} />
       </View>
 
       {/* Category and Price */}
-      <View className="flex flex-row items-start justify-between gap-3">
+      <View className="flex h-[60px] flex-row items-start justify-between gap-3">
         {/* Category */}
         <View className="flex-1">
         <Text className="text-sm text-gray-400">Category</Text>
@@ -169,7 +170,7 @@ const P_add_product = () => {
         {/* Product Price */}
       <View className="flex-1">
         <Text className="text-sm text-gray-400">Product price</Text>
-        <TextInput editable={variants.length == 0} value={variants.length > 0 ? '' : productInfo?.product_price.toString()} keyboardType='numeric' className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setProductInfo({...productInfo, product_price: Number(text)})} />
+        <TextInput editable={variants.length == 0} value={variants.length > 0 ? '' : productInfo?.product_price.toString()} keyboardType='numeric' className="w-[99%] flex-1 bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setProductInfo({...productInfo, product_price: Number(text)})} />
       </View>
 
       </View>
@@ -200,22 +201,36 @@ const P_add_product = () => {
       </View>
 
        {/* Addon */}
-        <View className="flex-1 mt-3">
+        <View className="flex-1 mt-3 ">
         <Text className="text-sm text-gray-400">Choose addon</Text>
-        <MultipleSelectList 
+        <MultiSelect 
+        style={styles.dropdown}
+        labelField='label'
+        valueField='value'
+        value={selected}
+        placeholder="Select addons"
+        placeholderStyle={{color: 'gray'}}
+        selectedStyle={{color: 'black', borderRadius: 100, borderWidth: 1, borderColor: 'black', height: 39}}
+        onChange={(val) => setSelected(val)}
+        data={Addons?.map((addon)=>({value: addon._id, label: addon.addon_name}))}
+        dropdownPosition="top"
+        />
+        {/* <MultipleSelectList 
         search={false}
         setSelected={(val) => setSelected(val)}
         data={Addons?.map((addon)=>({key: addon._id, value: addon.addon_name}))}
         save="key"
         label="Addons"
-        />
+        /> */}
+        </View>
         </View>
 
       {/* Submit button */}
+      <View className="flex-1  h-full">
       <TouchableOpacity disabled={!isSubmitEnabled()} onPress={handleSubmit} className="w-full mt-3 h-[40px] disabled:bg-green-300 bg-green-500 text-white shadow rounded flex flex-col items-center justify-center">
         <Text className="text-white">Submit</Text>
       </TouchableOpacity>
-
+      </View>
       </ScrollView>
     </View>
     </View>
@@ -226,10 +241,10 @@ export default P_add_product
 
 const styles = StyleSheet.create({
   dropdown: {
-    margin: 16,
     height: 50,
-    borderBottomColor: 'gray',
-    borderBottomWidth: 0.5,
+        backgroundColor: 'transparent',
+        borderBottomColor: 'gray',
+        borderBottomWidth: 0.5,
   },
   icon: {
     marginRight: 5,

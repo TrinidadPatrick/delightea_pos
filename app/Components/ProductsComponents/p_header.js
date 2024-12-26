@@ -67,7 +67,7 @@ const ProductsHeader = ({height, width}) => {
         <View style={{width: width+15, height: height-85, backgroundColor: 'rgba(0,0,0,0.5)'}} className=" absolute  top-0 left-0 z-10 flex flex-col justify-center items-center">
         <View className="w-[310px] h-fit rounded bg-white px-2 py-5 flex flex-col gap-2 justify-center">
           {/* text input */}
-          <View className=" w-[295px] flex flex-col gap-2">
+          <View className="w-[295px] flex flex-col gap-2">
             <Text className="text-sm text-gray-400">Category name</Text>
               <TextInput value={category} onChangeText={(text)=>setCategory(text)} className="w-full bg-white border rounded border-gray-300 px-2" placeholder="Enter category" />
           </View>
@@ -123,9 +123,9 @@ const ProductsHeader = ({height, width}) => {
       </TouchableOpacity>
 
       {/* Search bar */}
-      <View className=" w-[350px] bg-white rounded overflow-hidden shadow">
-            <TextInput className="w-full bg-white px-2" placeholder="Search item.." />
-      </View>
+      {/* <View className=" w-[350px] h-full rounded overflow-hidden shadow">
+            <TextInput className="w-full bg-white h-[55px] flex-1 px-2" placeholder="Search item.." />
+      </View> */}
     </View>
   )
 }

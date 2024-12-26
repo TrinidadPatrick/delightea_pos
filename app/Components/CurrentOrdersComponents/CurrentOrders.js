@@ -94,8 +94,6 @@ const CurrentOrders = () => {
             setIndexSwiped([...indexSwiped.filter((item) => item !== index)])
     }
 
-    console.log(isRefreshing)
-
   return (
 <GestureHandlerRootView>
     <View className="flex-1 flex flex-col bg-[#eeeeee]">

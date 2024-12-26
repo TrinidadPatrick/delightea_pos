@@ -14,7 +14,6 @@ import CartStore from '../../store/CartStore';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import PendingOrdersProvider from '../../Hooks/PendingOrdersProvider';
 import CurrentOrdersStore from '../../store/CurrentOrdersStore';
-import * as Speech from 'expo-speech';
 import {TextInput} from 'react-native-gesture-handler'
 
 export default function Home() {
@@ -31,11 +30,6 @@ export default function Home() {
     const [search, setSearch] = useState('');
     const [searchResult, setSearchResult] = useState(null);
 
-
-    const speak = () => {
-      const thingToSay = 'Search result for ' + search;
-      Speech.speak(thingToSay);
-    };
 
     useEffect(() => {
       categories.length !== 0 && setCategories(categories);
@@ -96,7 +90,7 @@ export default function Home() {
           {/* <Text className="font-medium text-lg">Delightea</Text> */}
           <View className="w-[400px]  flex flex-row h-[45px] relative rounded overflow-hidden shadow">
             <TextInput value={search} onChangeText={(text)=>setSearch(text)} className=" h-full w-full px-2 bg-white" placeholder="Search item.." />
-            <TouchableOpacity onPress={()=>{handleSearch();speak()}} className="w-fit top-2 px-2 right-2 h-[30px] absolute bg-theme-medium text-white rounded flex flex-col items-center justify-center">
+            <TouchableOpacity onPress={()=>{handleSearch()}} className="w-fit top-2 px-2 right-2 h-[30px] absolute bg-theme-medium text-white rounded flex flex-col items-center justify-center">
               <Text className="text-sm text-white">Search</Text>
             </TouchableOpacity>
           </View>

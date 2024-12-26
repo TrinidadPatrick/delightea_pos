@@ -8,6 +8,7 @@ const _layout = () => {
     <Drawer>
       <Drawer.Screen name="index" options={{ title: 'Home', headerShown: false, drawerLabel: 'Home' }} />
       <Drawer.Screen name="Products" options={{ title: 'Products', headerShown: false }} />
+      <Drawer.Screen name="Reports"  options={{ title: "Reports", headerShown: true }} />
     </Drawer>
   )
 }

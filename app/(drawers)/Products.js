@@ -15,7 +15,7 @@ export default function Products() {
   options={{
       title: "Products",
       headerShown: true,
-      headerLeft: () => <DrawerToggleButton />
+      // headerLeft: () => <DrawerToggleButton />
   }}
   />
   <ProductsHeader height={height} width={width} />
@@ -23,10 +23,3 @@ export default function Products() {
   </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: Constants.statusBarHeight,
-  },
-});

@@ -75,6 +75,7 @@ const h_cart_products = () => {
     const isSubmitDisabled = () => {
       return itemToAdd.product_name === '' || itemToAdd.quantity === 0 || itemToAdd.product_price === 0;
     }
+    
 
     const handleSubmit = () => {
       const data = {...itemToAdd, total_price : computeAddonPrice(), image : selectedItem.image, category_name : selectedItem.category_id.category_name, item_info : selectedItem};
@@ -230,13 +231,12 @@ const h_cart_products = () => {
       </Modal>
     {/* Items */}
     <View className="w-full flex flex-col flex-1 justify-start gap-2 items-center p-1">
-      <ScrollView>
+      <ScrollView className=" w-full" contentContainerStyle={{gap: 5, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center'}}>
       {
         Cart?.items?.map((item, index) => {
-
           return (
-          <TouchableOpacity onPress={()=>{handleSelectItem(item, item.item_info); setIsModalOpen(true)}} className="border border-gray-200 p-2 rounded" key={index}>
-            <View className="w-full flex flex-row justify-start rounded items-center gap-2" key={index}>
+          <TouchableOpacity onPress={()=>{handleSelectItem(item, item.item_info); setIsModalOpen(true)}} className=" w-full border flex flex-col border-gray-50 p-2 rounded" key={index}>
+            <View className="w-full flex-1 flex flex-row justify-start rounded items-center gap-2" key={index}>
               <View className="w-[70px] relative aspect-square  rounded overflow-hidden shadow">
                 <Image source={{uri: item.image}} className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
               </View>
@@ -293,7 +293,7 @@ const h_cart_products = () => {
       </View>
       {/* Submit Button */}
       <View className="w-full  flex flex-row justify-start mt-2">
-        <TouchableOpacity onPress={()=>{setIsShowNameModal(true)}} className=" bg-theme-medium disabled:bg-theme-semiLight w-full text-white px-4 py-2 rounded" >
+        <TouchableOpacity disabled={computeTotalPrice() === 0 || computeTotalPrice() > amountPaid} onPress={()=>{setIsShowNameModal(true)}} className=" bg-theme-medium disabled:bg-theme-light w-full text-white px-4 py-2 rounded" >
           <Text className="text-center text-white">Submit</Text>
         </TouchableOpacity>
       </View>
