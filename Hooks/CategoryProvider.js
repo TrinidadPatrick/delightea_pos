@@ -9,7 +9,12 @@ const CategoryProvider = () => {
         try {
             const response = await http.get('getCategories');
             const data = response.data;
-            setCategories(data.categories);
+            const categories = data.categories.sort((a, b) => {
+                if (a.category_name === "All") return -1; // Move "All" to the beginning
+                if (b.category_name === "All") return 1;  // Move other items after "All"
+                return new Date(b.created_at) - new Date(a.created_at); // Sort the rest by date
+              });              
+            setCategories(categories);
             return data
         } catch (error) {
             console.log(error)

@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useSearchParams, useRouter } from "expo-router";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image, ToastAndroid } from 'react-native'
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image, ToastAndroid, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Drawer } from 'expo-router/drawer'
 import Categories from '../../../data/CategoryList'
@@ -16,6 +16,7 @@ import { MultiSelect } from 'react-native-element-dropdown';
 
 const p_edit_product = () => {
     const router = useRouter();
+    const { width } = Dimensions.get('window');
     const { product } = useLocalSearchParams();
     const {getProducts} = ProductProvider()
     const {setProducts} = ProductStore()
@@ -34,7 +35,8 @@ const p_edit_product = () => {
         addons: [],
         category_id: '',
     })
-    
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     useEffect(() => {
         if(product !== null)
         {
@@ -65,16 +67,34 @@ const p_edit_product = () => {
       const handleVariantPriceInput = (index, value) => {
         setVariants([...variants.map((variant, i)=>i === index ? {...variant, variant_price: value} : variant)])
       }
+
+      const handleChangeStatus = async (status) => {
+        setIsSubmitting(true)
+        const data = {_id : productInfo._id, status : status}
+        try {
+          const response = await http.patch('changeStatus/'+productInfo._id, data);
+          const productsData = await getProducts()
+          setProducts(productsData.products)
+          showToast('Product updated successfully')
+          setIsSubmitting(false)
+          router.back()
+        } catch (error) {
+          console.log(error.response)
+        }
+      }
     
       const handleSubmit = async ()=> {
+        setIsSubmitting(true)
         const data = {...productInfo, variants: variants, addons: selected}
         try {
           const response = await http.patch('updateProduct/'+productInfo._id, data);
+          showToast('Product updated successfully')
+          router.back()
+          setIsSubmitting(false)
           const productsData = await getProducts()
           setProducts(productsData.products)
           clearInputs()
-          showToast('Product updated successfully')
-          router.back()
+          
         } catch (error) {
           console.log(error.response)
         }
@@ -128,25 +148,26 @@ const p_edit_product = () => {
       }
     
       const isSubmitEnabled = () => {
-        return productInfo.product_name.length > 0 && (productInfo.product_price > 0 || variants.length > 0)
+        return productInfo.product_name.length > 0 && (productInfo.product_price > 0 && isSubmitting === false || variants.length > 0)
       }
-
 
   return (
     <View className="flex-1 flex flex-row bg-[#f9f9f9] justify-center">
     <Stack.Screen options={{ title: 'Edit Product', headerShown: true }} />
     <View className="w-[400px]  bg-white rounded overflow-hidden shadow flex flex-col p-2 gap-3">
-      <ScrollView className="flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: 60, flexGrow: 1, justifyContent: 'flex-start' }} showsVerticalScrollIndicator={false}>
 
       {/* Product image */}
-      <View className="flex-1 mt-0">
-        {
-          productInfo.image &&
+      <View className="  mt-0">
+      {
+        productInfo.image &&
+        <View>
           <View className="w-full pb-2 flex flex-row items-center justify-center">
           <Image source={{uri: productInfo.image}} className="w-[100px] aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
         </View>
-        }
-        <TouchableOpacity onPress={pickImage} className="w-full h-[40px] bg-gray-200 text-white rounded flex flex-col items-center justify-center">
+        </View>
+      }
+      <TouchableOpacity onPress={pickImage} className="w-full h-[40px] bg-gray-200 text-white rounded flex flex-col items-center justify-center">
           <Text className="text-gray-800">{uploadingImage ? 'Uploading...' : 'Upload Image'}</Text>
         </TouchableOpacity>
       </View>
@@ -169,7 +190,7 @@ const p_edit_product = () => {
           inputSearchStyle={styles.inputSearchStyle}
           iconStyle={styles.iconStyle}
           data={Categories?.map((item) => ({ label: item.category_name, value: item._id }))}
-          value={productInfo.category_id !== '' ? productInfo.category_id._id : Categories[0]._id}
+          value={productInfo.category_id._id || productInfo.category_id}
           onChange={(value) => setProductInfo({...productInfo, category_id: value.value})}
           maxHeight={300}
           labelField="label"
@@ -182,7 +203,7 @@ const p_edit_product = () => {
         {/* Product Price */}
       <View className="flex-1 h-[60px]">
         <Text className="text-sm text-gray-400">Product price</Text>
-        <TextInput editable={variants.length == 0} value={variants.length > 0 ? '' : productInfo?.product_price.toString()} keyboardType='numeric' className="w-[99%] flex-1 bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setproductInfo({...productInfo, product_price: Number(text)})} />
+        <TextInput editable={variants.length == 0} value={variants.length > 0 ? '' : productInfo?.product_price.toString()} keyboardType='numeric' className="w-[99%] flex-1 bg-white px-2 border rounded border-gray-400" onChangeText={(text) => setProductInfo({...productInfo, product_price: Number(text)})} />
       </View>
 
       </View>
@@ -195,10 +216,10 @@ const p_edit_product = () => {
             variants.map((variant, index)=>(
               <View key={index} className="flex flex-row items-center justify-between gap-3">
                 <View className="flex-1">
-                  <TextInput value={variant.variant_name} placeholder='Variant name' className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantInput(index, text)} />
+                  <TextInput value={variant.variant_name} placeholder='Variant name' className="w-full bg-white h-[43px] px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantInput(index, text)} />
                 </View>
                 <View className="w-[32.5%]">
-                  <TextInput value={variant.variant_price.toString()} placeholder='Variant price' keyboardType='numeric' className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantPriceInput(index, text)} />
+                  <TextInput value={variant.variant_price.toString()} placeholder='Variant price' keyboardType='numeric' className="w-full h-[43px] bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantPriceInput(index, text)} />
                 </View>
                 <TouchableOpacity onPress={()=>setVariants(variants.filter((item, i)=>i !== index))} className="  h-[40px] bg-red-500 text-white px-2 shadow rounded flex flex-col items-center justify-center">
                   <Text className="text-white text-xs">Remove</Text>
@@ -225,22 +246,27 @@ const p_edit_product = () => {
         selectedStyle={{color: 'black', borderRadius: 100, borderWidth: 1, borderColor: 'black', height: 39}}
         onChange={(val) => setSelected(val)}
         data={Addons?.map((addon)=>({value: addon._id, label: addon.addon_name}))}
-        dropdownPosition="top"
+        dropdownPosition={width < 900 ? 'bottom' : 'top'}
         />
-        {/* <MultipleSelectList 
-        defaultOption={selectedItems}
-        search={false}
-        setSelected={(val) => setSelected(val)}
-        data={Addons?.map((addon)=>({key: addon._id, value: addon.addon_name}))}
-        save="key"
-        label="Addons"
-        /> */}
         </View>
 
       {/* Submit button */}
-      <TouchableOpacity disabled={!isSubmitEnabled()} onPress={handleSubmit} className="w-full mt-3 h-[40px] disabled:bg-green-300 bg-green-500 text-white shadow rounded flex flex-col items-center justify-center">
-        <Text className="text-white">Submit</Text>
+      <View className="w-full flex flex-row gap-2 ">
+      <TouchableOpacity disabled={!isSubmitEnabled()} onPress={handleSubmit} className="flex-1 mt-3 h-[40px] disabled:bg-green-300 bg-green-500 text-white shadow rounded flex flex-col items-center justify-center">
+        <Text className="text-white">{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
       </TouchableOpacity>
+      {
+        productInfo.status === 'active' ?
+        <TouchableOpacity disabled={isSubmitting} onPress={()=>handleChangeStatus('disabled')} className="w-[100px] mt-3 h-[40px] disabled:bg-green-300 bg-green-500 text-white shadow rounded flex flex-col items-center justify-center">
+        <Text className="text-white">Enabled</Text>
+      </TouchableOpacity>
+      :
+      <TouchableOpacity disabled={isSubmitting} onPress={()=>handleChangeStatus('active')} className="w-[100px] mt-3 h-[40px] disabled:bg-red-300 bg-red-500 text-white shadow rounded flex flex-col items-center justify-center">
+        <Text className="text-white">Disabled</Text>
+      </TouchableOpacity>
+      }
+      </View>
+      
 
       </ScrollView>
     </View>
@@ -250,7 +276,7 @@ const p_edit_product = () => {
 
 const styles = StyleSheet.create({
     dropdown: {
-        height: 50,
+        height: 30,
         backgroundColor: 'transparent',
         borderBottomColor: 'gray',
         borderBottomWidth: 0.5,

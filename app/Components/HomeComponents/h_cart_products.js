@@ -5,8 +5,10 @@ import Modal from "react-native-modal";
 import LottieView from 'lottie-react-native';
 import http from '../../../http';
 import PendingOrdersProvider from '../../../Hooks/PendingOrdersProvider';
+import ProductStore from '../../../store/ProductStore';
 
-const h_cart_products = () => {
+const h_cart_products = ({order}) => {
+  const {Products} = ProductStore()
   const {Cart, setCart} = CartStore()
   const {pendingOrders, getPendingOrders} = PendingOrdersProvider()
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +24,7 @@ const h_cart_products = () => {
     notes : ''
   })
   const [customerName, setCustomerName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
     // Cancel button
@@ -39,14 +42,16 @@ const h_cart_products = () => {
     }
 
     const handleRemove = () => {
-      setCart({...Cart, items : Cart.items.filter((item) => item.id !== itemToAdd.id)});
+      setCart({...Cart, order_id : Cart.items.length == 1 ? null : Cart.order_id, items : Cart.items.filter((item) => item.id !== itemToAdd.id)});
       handleCancel();
     }
 
       // selecting item from menu
     const handleSelectItem = (item, item_info) => {
+
+      const item_info_data = typeof item_info == 'object' ? item_info : Products.find((item) => item._id === item_info);
       setItemToAdd(item);
-      setSelectedItem(item_info);
+      setSelectedItem(item_info_data);
     };
 
     // computing the total price
@@ -73,9 +78,18 @@ const h_cart_products = () => {
     };
 
     const isSubmitDisabled = () => {
-      return itemToAdd.product_name === '' || itemToAdd.quantity === 0 || itemToAdd.product_price === 0;
+      return  amountPaid < computeTotalPrice() || isSubmitting
     }
     
+    const addedAmount = () => {
+      if(order)
+      {
+        const currentOrder = JSON.parse(order)
+        return computeTotalPrice() - currentOrder.total_price
+      }
+      
+       
+    }
 
     const handleSubmit = () => {
       const data = {...itemToAdd, total_price : computeAddonPrice(), image : selectedItem.image, category_name : selectedItem.category_id.category_name, item_info : selectedItem};
@@ -96,20 +110,44 @@ const h_cart_products = () => {
     }
 
     const addToDB = async () => {
+      setIsSubmitting(true);
       const data = {...Cart, customer_name : customerName, total_price : computeTotalPrice(), change_price : computeChangePrice()};
-      data.items.forEach((item) => {  
-        delete item.item_info;
-      })
+      const updatedItems = data.items.map((item) => ({
+        ...item, // Spread existing properties
+        item_info: item.item_info._id, 
+      }));
       
-      // console.log(data)
+      const updatedData = {
+        ...data, // Spread the other properties of the data object
+        items: updatedItems, // Replace items with the updated array
+      };
+      // console.log(order)
+      if(order)
+      {
+          try {
+          const response = await http.post('/updateOrder', updatedData);
+          clearCart();
+          setCustomerName('');
+          getPendingOrders()
+          setIsSubmitting(false); 
+        } catch (error) {
+          console.log(error)
+          setIsSubmitting(false); 
+        } 
+          return
+      }
+      
       try {
-        const response = await http.post('/createOrder', data);
-        console.log(response.data)
+        setIsSubmitting(true)
+        const response = await http.post('/createOrder', updatedData);
         clearCart();
+        setCustomerName('');
         getPendingOrders()
+        setIsSubmitting(false); 
       } catch (error) {
         console.log(error)
-      }
+        setIsSubmitting(false); 
+      } 
     }
     
 
@@ -193,13 +231,13 @@ const h_cart_products = () => {
           {/* Submit */}
           <View className="w-full gap-2  p-0.5 mt-3 flex flex-row justify-center">
             <View className="flex-1">
-            <TouchableOpacity disabled={isSubmitDisabled()} className="bg-green-500 disabled:bg-green-300  text-white px-4 py-2 rounded" onPress={() => handleSubmit()}>
+            <TouchableOpacity disabled={itemToAdd.product_name === '' || itemToAdd.quantity === 0 || itemToAdd.product_price === 0} className="bg-green-500 disabled:bg-green-300  text-white px-4 py-2 rounded" onPress={() => handleSubmit()}>
               <Text className="text-center text-white">Submit</Text>
             </TouchableOpacity>
             </View>
             
             <View className="w-fit flex flex-row justify-center">
-            <TouchableOpacity disabled={isSubmitDisabled()} className="bg-red-500 disabled:bg-green-300 text-white px-4 py-2 rounded" onPress={() => handleRemove()}>
+            <TouchableOpacity  className="bg-red-500 disabled:bg-red-300 text-white px-4 py-2 rounded" onPress={() => handleRemove()}>
               <Text className="text-center text-white">Remove</Text>
             </TouchableOpacity>
             </View>
@@ -212,20 +250,50 @@ const h_cart_products = () => {
       <Modal isVisible={isShowNameModal} onBackdropPress={()=>{handleCancel()}} backdropOpacity={0.5} animationIn={'slideInUp'} animationOut={'slideOutDown'}>
           <View className="w-[250px] h-fit bg-white rounded flex flex-col justify-start mx-auto p-2">
             <View className="w-full flex flex-col items-center justify-center">
-            <LottieView autoPlay style={{width: 100,height: 100}}
+            <LottieView autoPlay style={{width: 80,height: 80}}
             source={{uri : 'https://lottie.host/5fd7a578-c56a-41bd-be4d-0d0066fa6584/dVZ4fkm8gq.lottie'}}
             />
-              <Text className="text-green-600 text-2xl font-medium text-center">Order Submitted</Text>
+              <Text className="text-green-600 text-lg font-medium text-center">Order Submitted</Text>
+            </View>
+            {/* Total */}
+            <View className="w-full mt-5 flex flex-row justify-start">
+              <View className="flex-1">
+                <Text className="font-medium text-lg text-red-500">Total Amount</Text>
+              </View>
+              <View>
+              <Text className="font-medium text-lg text-red-500">₱{computeTotalPrice()}</Text>
+              </View>
+            </View>
+            {/* Added amount */}
+            {/* <View className="w-full mt-0 flex flex-row justify-start">
+              <View className="flex-1">
+                <Text className="font-medium text-lg text-red-500">Added Amount</Text>
+              </View>
+              <View>
+              <Text className="font-medium text-lg text-red-500">₱{addedAmount()}</Text>
+              </View>
+            </View> */}
+            {/* Change */}
+            <View className="w-full  flex flex-row justify-start">
+            <View className="flex-1">
+              <Text className="font-medium text-gray-500">Change </Text>
             </View>
             <View>
-              <Text className="text-lg text-center">Total Change</Text>
-              <Text className="font-semibold text-green-500 text-center text-xl">₱{computeChangePrice()}</Text>
+            <Text className="font-medium text-gray-500">₱{computeChangePrice() < 0 ? 0 : computeChangePrice()}</Text>
             </View>
-            <View className="mt-5 w-full">
+            </View>
+            {/* Amount input */}
+            <Text className="text-xs text-gray-500 mt-3">Enter Amount</Text>
+            <View className="w-full  flex flex-row justify-start mt-0">
+              <TextInput keyboardType='numeric' value={amountPaid} onChangeText={(text)=>setAmountPaid(text)} className="w-full placeholder:text-gray-400 h-full font-medium text-gray-500 border-gray-100 rounded border p-2" placeholder="Amount" />
+            </View>
+            {/* Customer name */}
+            <View className="mt-1 w-full">
               <TextInput value={customerName} onChangeText={(text)=>setCustomerName(text)} className="w-full h-fit text-lg text-start placeholder:text-gray-400  border-gray-100 rounded border p-2" placeholder="Enter customer name" />
             </View>
-            <TouchableOpacity onPress={()=>addToDB()} className="b bg-theme-medium disabled:bg-theme-light w-full text-white px-4 py-2 rounded mt-2">
-              <Text className="text-center text-white">Submit</Text>
+            {/* Add button */}
+            <TouchableOpacity disabled={isSubmitDisabled()} onPress={()=>addToDB()} className=" bg-theme-medium disabled:bg-theme-light w-full text-white px-4 py-2 rounded mt-2">
+              <Text className="text-center text-white">{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
             </TouchableOpacity>
           </View>
       </Modal>
@@ -235,33 +303,40 @@ const h_cart_products = () => {
       {
         Cart?.items?.map((item, index) => {
           return (
-          <TouchableOpacity onPress={()=>{handleSelectItem(item, item.item_info); setIsModalOpen(true)}} className=" w-full border flex flex-col border-gray-50 p-2 rounded" key={index}>
+          <TouchableOpacity onPress={()=>{handleSelectItem(item, item.item_info); setIsModalOpen(true)}} className=" w-full border-b-2 flex flex-col border-gray-100 p-2" key={index}>
             <View className="w-full flex-1 flex flex-row justify-start rounded items-center gap-2" key={index}>
-              <View className="w-[70px] relative aspect-square  rounded overflow-hidden shadow">
-                <Image source={{uri: item.image}} className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
-              </View>
+              {/* <View className="w-[50px] relative aspect-square  rounded overflow-hidden shadow">
+                <Image source={{uri: item.image || 'https://media.istockphoto.com/id/1222357475/vector/image-preview-icon-picture-placeholder-for-website-or-ui-ux-design-vector-illustration.jpg?s=612x612&w=0&k=20&c=KuCo-dRBYV7nz2gbk4J9w1WtTAgpTdznHu55W9FjimE='}} className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
+              </View> */}
               <View className="flex-1 w-full h-full flex flex-col justify-start items-start">
-                <Text className="text-start text-sm font-semibold">{item.product_name} ({item.category_name})</Text>
-                <Text className="text-start text-sm font-medium">Variant: <Text className="text-gray-500">{item.variant}</Text></Text>
-                <Text className="text-start text-sm font-medium">Quantity: <Text className="text-gray-500">{item.quantity}x</Text></Text>
-                <Text className="text-red-600 text-sm text-right w-full font-medium">₱{item.total_price}</Text>
+                <Text className="text-start text-sm font-semibold">{item.quantity}x {item.product_name}</Text>
+                <View className="flex flex-row justify-between">
+                  <View className="flex-1">
+                  <Text className="text-start text-sm font-medium">Variant: <Text className="text-gray-500">{item.variant}</Text></Text>
+                  </View>
+                  <View>
+                  <Text className="text-red-600 text-sm text-right  w-full font-medium">₱{item.total_price}</Text>
+                  </View>
+                </View>
               </View>
             </View>
             <View className="flex flex-row justify-start items-center w-full">
+              <View className="flex-1 ">
             {
                   item.addons.length > 0 &&
-                  <View className="flex flex-row gap-2 items-center w-full mt-2">
+                  <View className="flex flex-col gap-1 items-start w-full mt-0">
                     {
                       item.addons.map((addon, index) => {
                         return (
-                          <View className="flex flex-row gap-2 items-center bg-theme-medium px-1 rounded-sm" key={index}>
-                            <Text className="text-start text-sm font-light text-white">{addon.addon_name}</Text>
+                          <View className="flex flex-row gap-2 items-center  px-1 rounded-sm" key={index}>
+                            <Text className="text-start text-sm font-light text-gray-600">*{addon.addon_name}</Text>
                           </View>
                         )
                       })
                     }
                   </View>
                 }
+                </View>
             </View>
           </TouchableOpacity>
           )
@@ -271,7 +346,7 @@ const h_cart_products = () => {
     </View>
     {/* Buttons */}
     <View className="flex flex-col h-fit w-full p-1 border-gray-200 rounded">
-      <View className="w-full  flex flex-row justify-start">
+      {/* <View className="w-full  flex flex-row justify-start">
         <View className="flex-1">
           <Text className="font-medium text-gray-500">Total </Text>
         </View>
@@ -287,14 +362,13 @@ const h_cart_products = () => {
         <Text className="font-medium text-gray-500">₱{computeChangePrice() < 0 ? 0 : computeChangePrice()}</Text>
         </View>
       </View>
-      {/* Amount input */}
       <View className="w-full  flex flex-row justify-start mt-2">
         <TextInput keyboardType='numeric' value={amountPaid} onChangeText={(text)=>setAmountPaid(text)} className="w-full h-full font-medium text-gray-500 border-gray-100 rounded border p-2" placeholder="Amount" />
-      </View>
+      </View> */}
       {/* Submit Button */}
       <View className="w-full  flex flex-row justify-start mt-2">
-        <TouchableOpacity disabled={computeTotalPrice() === 0 || computeTotalPrice() > amountPaid} onPress={()=>{setIsShowNameModal(true)}} className=" bg-theme-medium disabled:bg-theme-light w-full text-white px-4 py-2 rounded" >
-          <Text className="text-center text-white">Submit</Text>
+        <TouchableOpacity disabled={Cart.items.length == 0} onPress={()=>{setIsShowNameModal(true)}} className=" bg-theme-medium disabled:bg-theme-light w-full text-white px-4 py-2 rounded" >
+          <Text className="text-center text-white">Place Order</Text>
         </TouchableOpacity>
       </View>
     </View>

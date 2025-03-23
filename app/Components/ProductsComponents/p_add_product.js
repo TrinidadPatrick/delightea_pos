@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image, ToastAndroid } from 'react-native'
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Image, ToastAndroid, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Stack, useRouter } from 'expo-router'
 import { Drawer } from 'expo-router/drawer'
@@ -17,6 +17,7 @@ import { MultiSelect } from 'react-native-element-dropdown';
 
 const P_add_product = () => {
   const router = useRouter();
+  const { width } = Dimensions.get('window');
   const {getProducts} = ProductProvider()
   const {setProducts} = ProductStore()
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -34,13 +35,15 @@ const P_add_product = () => {
     addons: [],
     category_id: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
 
   const showToast = (message) => {
     ToastAndroid.show(message, ToastAndroid.SHORT);
 };
 
   const clearInputs = () => {
-    setProductInfo({...productInfo, product_name: '', product_price: '', image: '', variants: [], addons: [], category_id: 1})
+    setProductInfo({...productInfo, product_name: '', product_price: '', image: ''})
   }
 
   const handleAddVariant = () => {
@@ -56,6 +59,7 @@ const P_add_product = () => {
   }
 
   const handleSubmit = async ()=> {
+    setIsSubmitting(true)
     const data = {...productInfo, variants: variants, addons: selected}
     try {
       const response = await http.post('addProduct', data);
@@ -63,8 +67,11 @@ const P_add_product = () => {
       setProducts(productsData.products)
       clearInputs()
       showToast('Product added successfully')
+      setIsSubmitting(false)
     } catch (error) {
       console.log(error.response)
+      showToast('Error adding product')
+      setIsSubmitting(false)
     }
   }
 
@@ -116,14 +123,16 @@ const P_add_product = () => {
   }
 
   const isSubmitEnabled = () => {
-    return productInfo.product_name.length > 0 && (productInfo.product_price > 0 || variants.length > 0)
+    return productInfo.product_name.length > 0 && (productInfo.product_price > 0 && isSubmitting === false || variants.length > 0)
   }
+
+  // console.log(productInfo.category_id !== '' ? productInfo.category_id : Categories[0]._id)
 
   return (
     <View className="flex-1 flex flex-row bg-[#f9f9f9] justify-center">
         <Stack.Screen options={{ title: 'Add Product', headerShown: true }} />
     
-    <View className="w-[450px] relative bg-white rounded overflow-hidden shadow flex flex-col p-2 gap-3">
+    <View className={` ${width <= 900 ? 'w-[400px]' : 'w-[450px]'} pb-[20px] relative bg-white rounded overflow-hidden shadow flex flex-col p-2 gap-3`}>
       <ScrollView contentContainerStyle={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
       {/* Product image */}
       <View className="flex-1 h-full">
@@ -156,8 +165,9 @@ const P_add_product = () => {
           selectedTextStyle={styles.selectedTextStyle}
           inputSearchStyle={styles.inputSearchStyle}
           iconStyle={styles.iconStyle}
-          data={Categories?.map((item) => ({ label: item.category_name, value: item._id }))}
-          value={productInfo.category_id !== '' ? productInfo.category_id : Categories[0]._id}
+          data={Categories?.filter((item)=> item.category_name !== 'All').map((item) => ({ label: item.category_name, value: item._id }))}
+          // value={productInfo.category_id !== '' ? productInfo.category_id : Categories[0]._id}
+          searchPlaceholderTextColor='gray'
           onChange={(value) => setProductInfo({...productInfo, category_id: value.value})}
           maxHeight={300}
           labelField="label"
@@ -182,11 +192,11 @@ const P_add_product = () => {
           {
             variants.map((variant, index)=>(
               <View key={index} className="flex flex-row items-center justify-between gap-3">
-                <View className="flex-1">
-                  <TextInput value={variant.variant_name} placeholder='Variant name' className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantInput(index, text)} />
+                <View className="flex-1 h-[40px]">
+                  <TextInput value={variant.variant_name} placeholder='Variant name' className="w-full bg-white px-2 h-[40px] border rounded border-gray-400" onChangeText={(text) => handleVariantInput(index, text)} />
                 </View>
-                <View className="w-[32.5%]">
-                  <TextInput value={variant.variant_price} placeholder='Variant price' keyboardType='numeric' className="w-full bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantPriceInput(index, text)} />
+                <View className="w-[32.5%] h-[40px]">
+                  <TextInput value={variant.variant_price} placeholder='Variant price' keyboardType='numeric' className="w-full h-[40px] bg-white px-2 border rounded border-gray-400" onChangeText={(text) => handleVariantPriceInput(index, text)} />
                 </View>
                 <TouchableOpacity onPress={()=>setVariants(variants.filter((item, i)=>i !== index))} className="  h-[40px] bg-red-500 text-white px-2 shadow rounded flex flex-col items-center justify-center">
                   <Text className="text-white text-xs">Remove</Text>
@@ -213,22 +223,15 @@ const P_add_product = () => {
         selectedStyle={{color: 'black', borderRadius: 100, borderWidth: 1, borderColor: 'black', height: 39}}
         onChange={(val) => setSelected(val)}
         data={Addons?.map((addon)=>({value: addon._id, label: addon.addon_name}))}
-        dropdownPosition="top"
+        dropdownPosition={width < 900 ? 'bottom' : 'top'}
         />
-        {/* <MultipleSelectList 
-        search={false}
-        setSelected={(val) => setSelected(val)}
-        data={Addons?.map((addon)=>({key: addon._id, value: addon.addon_name}))}
-        save="key"
-        label="Addons"
-        /> */}
         </View>
         </View>
 
       {/* Submit button */}
       <View className="flex-1  h-full">
       <TouchableOpacity disabled={!isSubmitEnabled()} onPress={handleSubmit} className="w-full mt-3 h-[40px] disabled:bg-green-300 bg-green-500 text-white shadow rounded flex flex-col items-center justify-center">
-        <Text className="text-white">Submit</Text>
+        <Text className="text-white">{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
       </TouchableOpacity>
       </View>
       </ScrollView>

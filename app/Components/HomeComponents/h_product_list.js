@@ -1,4 +1,4 @@
-import { View, Text, Dimensions,  FlatList, ScrollView, Image, TouchableOpacity, TextInput } from 'react-native'
+import { View, Text, Dimensions,  FlatList, ScrollView, Image, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import HomeHeader from './h_header'
 import ProductStore from '../../../store/ProductStore';
@@ -6,7 +6,7 @@ import Modal from "react-native-modal";
 import CartStore from '../../../store/CartStore';
 import http from '../../../http';
 
-const HomeProductList = ({result}) => {
+const HomeProductList = ({result, order}) => {
   const [elementWidth, setElementWidth] = useState(0);
   const {Products} = ProductStore()
   const {Cart, setCart} = CartStore()
@@ -29,6 +29,14 @@ const HomeProductList = ({result}) => {
     const randomString = Math.random().toString(36).substring(2, 10); // Random alphanumeric string
     return `ORD-${timestamp}-${randomString.toUpperCase()}`; // Format as desired
   }
+
+  useEffect(()=>{
+    if(order)
+    {
+      const new_order = JSON.parse(order)
+      setCart({order_id : new_order.order_id, items : new_order.items})
+    }
+  },[])
 
   const generateId = () => {
     const timestamp = Date.now(); // Current timestamp in milliseconds
@@ -71,18 +79,21 @@ const HomeProductList = ({result}) => {
 
   // selecting item from menu
   const handleSelectItem = (item) => {
-    setItemToAdd({...itemToAdd, product_name : item.product_name});
+    setItemToAdd({...itemToAdd, product_name : item.product_name, product_price : item.variants.length == 0 ? item.product_price : 0});
     setSelectedItem(item);
   };
 
   // computing the total price
-  const computeAddonPrice = () => {
-    const addons = itemToAdd.addons
-    let price =  itemToAdd?.product_price;
-    addons.forEach((addon) => {
-      price += Number(addon.addon_price);
-    });
-    return price * itemToAdd?.quantity;
+  const computePrice = () => {
+    if(selectedItem !== null) {
+      const addonsSelected = itemToAdd?.addons
+        let price =  itemToAdd?.product_price;
+        addonsSelected.forEach((addon) => {
+          price += Number(addon.addon_price);
+        });     
+        return price * itemToAdd?.quantity;
+      // return selectedItem?.product_price * itemToAdd?.quantity;
+    }
   };
 
   // selecting addon
@@ -99,10 +110,46 @@ const HomeProductList = ({result}) => {
   };
 
   const handleSubmit = () => {
-    const data = {...itemToAdd, id : generateId(), total_price : computeAddonPrice(), image : selectedItem.image, category_id : selectedItem.category_id, category_name : selectedItem.category_id.category_name, item_info : selectedItem};
+    const data = {...itemToAdd, id : generateId(), total_price : computePrice(), image : selectedItem.image, category_id : selectedItem.category_id._id, category_name : selectedItem.category_id.category_name, item_info : selectedItem};
     setCart({order_id : Cart.order_id || generateOrderId(), items : [...Cart.items, data]});
     handleCancel();
   }
+
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+        disabled={item.status === 'disabled'} 
+        onPress={() => {
+            handleSelectItem(item);
+            setIsModalOpen(true);
+        }} 
+        style={{ width: elementWidth / 5 }} 
+        className="h-fit p-1 flex flex-col justify-center items-center"
+    >
+        <View className={`flex-1 ${item.status === 'active' ? 'bg-white' : 'bg-red-100'} rounded-md border border-gray-200 w-full h-fit flex flex-col p-2`}>
+            {/* Image */}
+            <View className="w-full relative aspect-square z-20 rounded-lg overflow-hidden">
+                {item.status !== 'active' && (
+                    <View className="absolute top-10 z-50 left-5 bg-white px-2 rounded-sm">
+                        <Text className="text-red-500">Sold out</Text>
+                    </View>
+                )}
+                <Image 
+                    source={{ uri: item.image || 'https://media.istockphoto.com/id/1222357475/vector/image-preview-icon-picture-placeholder-for-website-or-ui-ux-design-vector-illustration.jpg?s=612x612&w=0&k=20&c=KuCo-dRBYV7nz2gbk4J9w1WtTAgpTdznHu55W9FjimE=' }} 
+                    className="w-full scale-110 aspect-square rounded-lg overflow-hidden" 
+                />
+            </View>
+            {/* <View className="w-fit h-fit bg-transparent">
+                <Text style={{ width: 'fit-content' }} className="text-center mt-1">
+                    ({item.category_id.category_name})
+                </Text>
+            </View> */}
+            <Text className="text-center mt-2 font-bold">{item.product_name}</Text>
+        </View>
+    </TouchableOpacity>
+);
+
+
 
   return (
     <View className="flex-1 flex flex-col bg-[#f9f9f9] h-full p-3  justify-start items-center">
@@ -116,9 +163,9 @@ const HomeProductList = ({result}) => {
             <Image source={{uri: selectedItem?.image || 'https://placehold.co/400x400?text=No%20Image'}} className="w-[100px] aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
             {/* Order info */}
             <View className="flex flex-col justify-start items-start w-full mt-0">
-              <Text className="text-start font-semibold">{itemToAdd?.product_name} ({selectedItem?.category_id?.category_name})</Text>
+              <Text className="text-start font-semibold">{itemToAdd?.product_name}</Text>
               <Text className="text-start font-medium">Variant: <Text className="text-gray-500">{itemToAdd?.variant}</Text></Text>
-              <Text className="text-start font-medium">Price: <Text className="text-red-600 text-lg">₱{computeAddonPrice()}</Text></Text>
+                <Text className="text-start font-medium">Price: <Text className="text-red-600 text-lg">₱{computePrice()}</Text></Text>
               {/* Quantity */}
               <View className="flex flex-row justify-start gap-2 items-center w-full mt-2">
                 <Text className="text-start font-medium text-gray-500">Quantity</Text>
@@ -158,7 +205,7 @@ const HomeProductList = ({result}) => {
 
           {/* Addons */}
           <View>
-          <Text className="mt-3 text-start font-medium text-gray-500">Addons</Text>
+          <Text className="mt-3 text-start font-medium text-gray-500">Add ons</Text>
           <ScrollView className="h-[50px] " horizontal contentContainerStyle={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center'}}>
           {
             selectedItem?.addons?.map((addon, index) => {
@@ -183,7 +230,7 @@ const HomeProductList = ({result}) => {
           {/* Submit */}
           <View className="flex w-full mt-3 flex-row justify-center">
             <TouchableOpacity disabled={isSubmitDisabled()} className="bg-green-500 disabled:bg-green-300 w-full text-white px-4 py-2 rounded-lg" onPress={() => handleSubmit()}>
-              <Text className="text-center text-white">Submit</Text>
+              <Text className="text-center text-white">Add</Text>
             </TouchableOpacity>
           </View>
 
@@ -193,23 +240,42 @@ const HomeProductList = ({result}) => {
       <HomeHeader selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
       <FlatList
       onLayout={handleLayout}
+      style={{ width: '100%' }}
+      numColumns={5}
+      data={products}
+      keyExtractor={(item) => item._id}
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={5}
+      windowSize={5}
+      renderItem={renderItem}
+      />
+      {/* <FlatList
+      onLayout={handleLayout}
       style={{ width: '100%'}}
       numColumns={5}
       data={products}
-      renderItem={({ item }) => <TouchableOpacity onPress={()=>{handleSelectItem(item);setIsModalOpen(true)}} style={{width: elementWidth/5}} className=" h-fit p-1 flex flex-col justify-center items-center">
-        <View className="flex-1 bg-white rounded-md border border-gray-200 w-full h-fit flex flex-col p-2">
-          {/* Image */}
-          <View className="w-full relative aspect-square bg-red-100 rounded-lg overflow-hidden shadow">
-            <Image source={{uri: item.image || 'https://placehold.co/400x400?text=No%20Image'}} className="w-full aspect-square bg-red-100 rounded-lg overflow-hidden shadow" />
+      key={(item) => item._id}
+      renderItem={({ item }) => 
+      <TouchableOpacity disabled={item.status == 'disabled'} onPress={()=>{handleSelectItem(item);setIsModalOpen(true)}} style={{width: elementWidth/5}} 
+      className={`h-fit p-1  flex flex-col justify-center items-center`}>
+        <View className={`flex-1 ${item.status === 'active' ? 'bg-white' : 'bg-red-100'} rounded-md border border-gray-200 w-full h-fit flex flex-col p-2`}>
+          <View className="w-full relative aspect-square z-20 rounded-lg overflow-hidden">
+            {
+              item.status !== 'active' &&
+              <View className="absolute top-10 z-50 left-5 bg-white px-2 rounded-sm">
+              <Text className="text-red-500">Sold out</Text>
+              </View>
+            }
+            <Image source={{uri: item.image || 'https://media.istockphoto.com/id/1222357475/vector/image-preview-icon-picture-placeholder-for-website-or-ui-ux-design-vector-illustration.jpg?s=612x612&w=0&k=20&c=KuCo-dRBYV7nz2gbk4J9w1WtTAgpTdznHu55W9FjimE='}} className="w-full scale-110 aspect-square rounded-lg overflow-hidden" />
           </View>
-          <View className=" w-fit h-fit bg-white">
+          <View className=" w-fit h-fit bg-transparent">
               <Text style={{width : 'fit-content'}} className="text-center mt-1 ">({item.category_id.category_name})</Text>
           </View>
           <Text className="text-center mt-2 font-bold">{item.product_name}</Text>
         </View>
       </TouchableOpacity>}
       keyExtractor={(item, index) => index.toString()}
-      />
+      /> */}
     </View>
   )
 }

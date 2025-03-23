@@ -1,9 +1,9 @@
 import { Pressable, Text, TouchableOpacity, View, Platform, Dimensions, StatusBar } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import HomeCartProducts from '../Components/HomeComponents/h_cart_products';
 import HomeProductList from '../Components/HomeComponents/h_product_list';
 import '../../global.css'
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import CategoryProvider from '../../Hooks/CategoryProvider';
 import CategoryStore from '../../store/categoryStore';
 import AddonProvider from '../../Hooks/AddonProvider';
@@ -15,8 +15,10 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import PendingOrdersProvider from '../../Hooks/PendingOrdersProvider';
 import CurrentOrdersStore from '../../store/CurrentOrdersStore';
 import {TextInput} from 'react-native-gesture-handler'
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 export default function Home() {
+    const {order} = useLocalSearchParams()
     const router = useRouter();
     const {pendingOrders} = PendingOrdersProvider()
     const {CurrentOrders, setCurrentOrders} = CurrentOrdersStore()
@@ -29,6 +31,12 @@ export default function Home() {
     const {addons} = AddonProvider()
     const [search, setSearch] = useState('');
     const [searchResult, setSearchResult] = useState(null);
+
+useFocusEffect(
+    useCallback(()=>{
+ ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+    },[])
+)
 
 
     useEffect(() => {
@@ -76,7 +84,6 @@ export default function Home() {
 
   return  (
   <View className="flex-1 relative flex flex-row bg-white">
-
     <Stack.Screen
     options={{
         title: "",
@@ -107,8 +114,8 @@ export default function Home() {
             <Text className="font-medium text-lg">Order ID: <Text className="text-gray-500">{Cart?.order_id}</Text></Text>
           </View>
         </View>
-    <HomeProductList result={searchResult} />
-    <HomeCartProducts />
+    <HomeProductList result={searchResult} order={order} />
+    <HomeCartProducts order={order} />
   </View>
   
   )

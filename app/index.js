@@ -9,6 +9,7 @@ const index = () => {
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
+
   return (
     <View>
       <Stack.Screen options={{ title: 'Home', headerShown: false }} />

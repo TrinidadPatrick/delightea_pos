@@ -20,6 +20,7 @@ const ProductsHeader = ({height, width}) => {
   const [openAddAddonsModal, setOpenAddAddonsModal] = useState(false);
   const [category, setCategory] = useState('');
   const [addon, setAddon] = useState({addon_name: '', addon_price: 0});
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const arrangeProducts = () => {
     const categories = Categories.map(category => {
@@ -30,6 +31,7 @@ const ProductsHeader = ({height, width}) => {
 
   const handleSubmitCategory = async () => {
     try {
+      setIsSubmitting(true)
       const response = await http.post('addCategory', {category_name: category});
       const data = await getCategories()
       setCategories(data.categories)
@@ -37,12 +39,14 @@ const ProductsHeader = ({height, width}) => {
       console.log(error)
     } finally{
       setCategory('');
+      setIsSubmitting(false)
     }
     setOpenAddCategoryModal(false);
   }
 
   const handleSubmitAddon = async () => {
     try {
+      setIsSubmitting(true)
       const response = await http.post('addAddon', {addon_name: addon.addon_name, addon_price: addon.addon_price});
       const data = await getAddons()
       setAddons(data.addons)
@@ -50,6 +54,7 @@ const ProductsHeader = ({height, width}) => {
       console.log(error)
     } finally{
       setAddon({addon_name: '', addon_price: 0});
+      setIsSubmitting(false)
     }
     setOpenAddAddonsModal(false);
   }
@@ -64,15 +69,15 @@ const ProductsHeader = ({height, width}) => {
       {/* Add category Modal */}
       {
         openAddCategoryModal &&
-        <View style={{width: width+15, height: height-85, backgroundColor: 'rgba(0,0,0,0.5)'}} className=" absolute  top-0 left-0 z-10 flex flex-col justify-center items-center">
+        <View style={{width: width > 900 ? width+15 : '104%', height: width > 900 ? height-85 : height+400, backgroundColor: 'rgba(0,0,0,0.5)'}} className=" absolute top-0 left-0 z-10 flex flex-col justify-center items-center">
         <View className="w-[310px] h-fit rounded bg-white px-2 py-5 flex flex-col gap-2 justify-center">
           {/* text input */}
           <View className="w-[295px] flex flex-col gap-2">
             <Text className="text-sm text-gray-400">Category name</Text>
-              <TextInput value={category} onChangeText={(text)=>setCategory(text)} className="w-full bg-white border rounded border-gray-300 px-2" placeholder="Enter category" />
+              <TextInput value={category} onChangeText={(text)=>setCategory(text)} className="w-full h-[50px] bg-white border rounded border-gray-300 px-2" placeholder="Enter category" />
           </View>
           <TouchableOpacity onPress={handleSubmitCategory} className="w-full  h-[40px] bg-blue-500 text-white shadow rounded flex flex-col items-center justify-center">
-          <Text className="text-white">Submit</Text>
+          <Text className="text-white">{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={()=>setOpenAddCategoryModal(false)} className="w-full  h-[40px] bg-gray-50 text-white shadow rounded flex flex-col items-center justify-center">
             <Text className="text-gray-900">Cancel</Text>
@@ -84,19 +89,19 @@ const ProductsHeader = ({height, width}) => {
       {/* Add Addons Modal */}
       {
         openAddAddonsModal &&
-        <View style={{width: width+15, height: height-85, backgroundColor: 'rgba(0,0,0,0.5)'}} className=" absolute  top-0 left-0 z-10 flex flex-col justify-center items-center">
+        <View style={{width: width > 900 ? width+15 : '104%', height: width > 900 ? height-85 : height+400, backgroundColor: 'rgba(0,0,0,0.5)'}} className=" absolute  top-0 left-0 z-10 flex flex-col justify-center items-center">
         <View className="w-[310px] h-fit rounded bg-white px-2 py-5 flex flex-col gap-2 justify-center">
           {/* text input */}
           <View className=" w-[295px] flex flex-col gap-2">
             <Text className="text-sm text-gray-400">Addon name</Text>
-              <TextInput value={addon.addon_name} onChangeText={(text)=>setAddon({...addon, addon_name: text})} className="w-full bg-white border rounded border-gray-300 px-2" placeholder="Enter addon" />
+              <TextInput value={addon.addon_name} onChangeText={(text)=>setAddon({...addon, addon_name: text})} className="w-full h-[50px] bg-white border rounded border-gray-300 px-2" placeholder="Enter addon" />
           </View>
           <View className=" w-[295px] flex flex-col gap-2">
             <Text className="text-sm text-gray-400">Addon price</Text>
-              <TextInput value={addon.addon_price} onChangeText={(text)=>setAddon({...addon, addon_price: Number(text)})} className="w-full bg-white border rounded border-gray-300 px-2" placeholder="Enter addon price" />
+              <TextInput value={addon.addon_price} onChangeText={(text)=>setAddon({...addon, addon_price: Number(text)})} className="w-full h-[50px] bg-white border rounded border-gray-300 px-2" placeholder="Enter addon price" />
           </View>
           <TouchableOpacity onPress={handleSubmitAddon} className="w-full  h-[40px] bg-blue-500 text-white shadow rounded flex flex-col items-center justify-center">
-            <Text className="text-white">Submit</Text>
+            <Text className="text-white">{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={()=>setOpenAddAddonsModal(false)} className="w-full  h-[40px] bg-gray-50 text-white shadow rounded flex flex-col items-center justify-center">
             <Text className="text-gray-900">Cancel</Text>
